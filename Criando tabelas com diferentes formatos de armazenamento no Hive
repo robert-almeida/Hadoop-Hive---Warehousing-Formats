@@ -1,0 +1,69 @@
+# Exemplo de tabela com formato TextFile
+# Acessar o shell do do Hive:
+
+beeline -u jdbc:hive2://quickstart:10000/default -n admin -d org.apache.hive.jdbc.HiveDriver
+create database jogos_olimpicos;
+use jogos_olimpicos;
+create table olimpiada( atleta STRING, idade INT, pais STRING, ano STRING, encerramento STRING, esporte STRING, ouro INT, prata INT, bronze INT, total INT) row format delimited fields terminated by '\t' stored as textfile;
+describe olimpiada;
+load data local inpath '/home/cloudera/Documents/olympic_data.csv' into table olimpiada;
+select * from olimpiada limit 5;
+select count(*) from olimpiada;
+select atleta, idade, total from olimpiada;
+
+# Exemplo de tabela com formato SequenceFile
+create table olimpiada_sequencefile( atleta STRING, idade INT, pais STRING, ano STRING, encerramento STRING, esporte STRING, ouro INT, prata INT, bronze INT, total INT) row format delimited fields terminated by '\t' stored as sequencefile;
+#Para carregar os dados em formato SequenceFile, é preciso inserir os dados de outra tabela, pois seu formato é binário. Dessa forma, para carregar os dados em SequenceFile, utiliza-se a seguinte abordagem:
+INSERT OVERWRITE TABLE olimpiada_sequencefile SELECT * FROM olimpiada;
+select atleta, idade, total from olimpiada_sequencefile;
+# abrir outro terminal de linha de comando executar o seguintes comandos e comparar o tamanho dos arquivos criados:
+hdfs dfs -ls /user/hive/warehouse/jogos_olimpicos.db/olimpiada
+hdfs dfs -ls /user/hive/warehouse/jogos_olimpicos.db/olimpiada_sequencefile
+
+# Exemplo de tabela com formato RCFile
+create table olimpiada_rcfile(atleta STRING, idade INT, pais STRING, ano STRING, encerramento STRING, esporte STRING, ouro INT, prata INT, bronze INT, total INT) row format delimited fields terminated by '\t' stored as rcfile;
+INSERT OVERWRITE TABLE olimpiada_rcfile SELECT * FROM olimpiada;
+select atleta, idade, total from olimpiada_rcfile;
+
+# Exemplo de tabela com formato ORCFile
+create table olimpiada_orcfile(atleta STRING, idade INT, pais STRING, ano STRING, encerramento STRING, esporte STRING, ouro INT, prata INT, bronze INT, total INT) row format delimited fields terminated by '\t' stored as orcfile;
+INSERT OVERWRITE TABLE olimpiada_orcfile SELECT * FROM olimpiada;
+select atleta, idade, total from olimpiada_orcfile;
+
+# Exemplo de tabela com formato Parquet
+create table olimpiada_parquet(atleta STRING,idade INT,pais STRING,ano STRING,encerramento STRING,esporte STRING,ouro INT,prata INT,bronze INT,total INT) row format delimited fields terminated by '\t' stored as parquet;
+INSERT OVERWRITE TABLE olimpiada_parquet SELECT * FROM olimpiada;
+select atleta, idade, total from olimpiada_parquet;
+
+# Exemplo de tabela com formato Avro File
+create table olimpiada_avro
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe'
+STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat'
+OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat'
+tblproperties ('avro.schema.literal'='{
+"namespace":"com.example.avro",
+"name": "my_record",
+"type": "record",
+"fields": [
+{"name":"atleta", "type":["string","null"],"default":null},
+{"name":"idade", "type":["int","null"],"default":0},
+{"name":"pais", "type":["string","null"],"default":null},
+{"name":"ano", "type":["string","null"],"default":null},
+{"name":"encerramento", "type":["string","null"],"default":null},
+{"name":"esporte", "type":["string","null"],"default":null},
+{"name":"ouro", "type":["int","null"],"default":0},
+{"name":"prata", "type":["int","null"],"default":0},
+{"name":"bronze", "type":["int","null"],"default":0},
+{"name":"total", "type":["int","null"],"default":0}
+]}');
+INSERT OVERWRITE TABLE olimpiada_avro SELECT * FROM olimpiada;
+select atleta, idade, total from olimpiada_avro;
+# No outro terminal de linha de comando executar o seguinte comando e comparar o tamanho dos arquivos criados:
+hdfs dfs -ls -R /user/hive/warehouse/jogos_olimpicos.db
+
+# Hive – Formatos de compressão
+create table olimpiada_parquet2(atleta STRING, idade INT, pais STRING, ano STRING, encerramento STRING, esporte STRING, ouro INT, prata INT, bronze INT, total INT) row format delimited fields terminated by '\t' stored as parquet tblproperties("parquet.compression"="SNAPPY");
+# No outro terminal de linha de comando executar o seguinte comando e comparar o tamanho dos arquivos criados:
+hdfs dfs -ls -R /user/hive/warehouse/jogos_olimpicos.db/
+
+# Com estes exemplos é possível fazer Benchmarking e determinar o melhor formato de armazenamento para um determinado arquivo.
